@@ -93,6 +93,7 @@
 
     <!-- Preference -->
     <string name="pref_courses_title">Courses</string>
+    <string name="pref_recitations_key">pref_recitations</string>
     <string name="pref_recitations">Show recitations</string>
     <string name="pref_recitations_summ">Display recitations in search results</string>
 
@@ -101,6 +102,23 @@
     <string name="pref_vegetarian_summ">Display only vegetarian food items in the dining menus</string>
     <string name="pref_vegan">Show only vegan items</string>
     <string name="pref_vegan_summ">Display only vegan food items in the dining menus</string>
+
+    <string name="pref_home_title">Home</string>
+    <string name="pref_home_weather_key">weather_key</string>
+    <string name="pref_home_weather_title">Weather</string>
+    <string name="pref_home_weather_summ">Display current weather</string>
+
+    <string name="pref_home_schedule_key">schedule_key</string>
+    <string name="pref_home_schedule_title">Schedule</string>
+    <string name="pref_home_schedule_summ">Display your current course schedule</string>
+
+    <string name="pref_home_dining_key">dining_key</string>
+    <string name="pref_home_dining_title">Dining</string>
+    <string name="pref_home_dining_summ">Display current available dining options and times till closing</string>
+
+    <string name="pref_home_study_key">study_home_key</string>
+    <string name="pref_home_study_title">Study Room Availability</string>
+    <string name="pref_home_study_summ">Display today\'s study room availability</string>
 
     <!-- Search favorites -->
     <string name="directory_show">Show favorites</string>

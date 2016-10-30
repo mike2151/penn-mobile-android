@@ -2,13 +2,46 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
+        android:title="@string/pref_home_title">
+
+        <CheckBoxPreference
+            android:key="@string/pref_home_weather_key"
+            android:title="@string/pref_home_weather_title"
+            android:summary="@string/pref_home_weather_summ"
+            android:defaultValue="true"
+            />
+
+        <CheckBoxPreference
+            android:key="@string/pref_home_schedule_key"
+            android:title="@string/pref_home_schedule_title"
+            android:summary="@string/pref_home_schedule_summ"
+            android:defaultValue="true"
+            />
+
+        <CheckBoxPreference
+            android:key="@string/pref_home_study_key"
+            android:title="@string/pref_home_study_title"
+            android:summary="@string/pref_home_study_summ"
+            android:defaultValue="false"
+            />
+
+        <CheckBoxPreference
+            android:key="@string/pref_home_dining_key"
+            android:title="@string/pref_home_dining_title"
+            android:summary="@string/pref_home_dining_summ"
+            android:defaultValue="false"
+            />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/pref_courses_title">
 
-    <CheckBoxPreference
-        android:key="pref_recitations"
-        android:title="@string/pref_recitations"
-        android:summary="@string/pref_recitations_summ"
-        android:defaultValue="true"/>
+        <CheckBoxPreference
+            android:key="@string/pref_recitations_key"
+            android:title="@string/pref_recitations"
+            android:summary="@string/pref_recitations_summ"
+            android:defaultValue="true"/>
     </PreferenceCategory>
 
 </PreferenceScreen>

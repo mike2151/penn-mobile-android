@@ -154,7 +154,7 @@ public class RegistrarTab extends SearchFavoriteTab {
 
     private List<Course> filterCourses(List<Course> courses){
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        boolean recitations = sharedPref.getBoolean("pref_recitations", true);
+        boolean recitations = sharedPref.getBoolean(getString(R.string.pref_recitations_key), true);
         if (!recitations) {
             List<Course> courses_filt = new ArrayList<>();
             for (Course course : courses) {

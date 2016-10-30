@@ -9,6 +9,7 @@ import com.pennapps.labs.pennmobile.classes.LaundryRoom;
 import com.pennapps.labs.pennmobile.classes.LaundryMachine;
 import com.pennapps.labs.pennmobile.classes.Person;
 import com.pennapps.labs.pennmobile.classes.Review;
+import com.pennapps.labs.pennmobile.classes.StudySpace;
 import com.pennapps.labs.pennmobile.classes.Venue;
 
 import java.util.List;
@@ -65,4 +66,13 @@ public interface Labs {
     @GET("/laundry/hall/{id}")
     Observable<List<LaundryMachine>> laundryMachines(
         @Path("id") int id);
+
+    @GET("/studyspaces/ids")
+    Observable<List<StudySpace>> studySpaceId();
+
+    @GET("/studyspaces/avail/{date}")
+    Observable<List<StudySpace.TimeSlot>> studySpaceTimeSlot(
+        @Path("date") String date,
+        @Query("id") Integer id); //Integer so it is optional (null)
+
 }
