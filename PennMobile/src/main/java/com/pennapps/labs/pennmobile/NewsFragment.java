@@ -1,50 +1,24 @@
 package com.pennapps.labs.pennmobile;
 
 import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Parcel;
-import android.os.Parcelable;
-import android.support.customtabs.CustomTabsCallback;
-import android.support.customtabs.CustomTabsClient;
 import android.support.customtabs.CustomTabsIntent;
-import android.support.customtabs.CustomTabsService;
-import android.support.customtabs.CustomTabsServiceConnection;
-import android.support.customtabs.CustomTabsSession;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.ListFragment;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.support.v4.widget.NestedScrollView;
-import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebView;
 import android.widget.ArrayAdapter;
-import android.widget.FrameLayout;
 import android.widget.ListView;
-import android.widget.ViewFlipper;
-
-import java.util.ArrayList;
-import java.util.LinkedList;
 
 import butterknife.ButterKnife;
 
 public class NewsFragment extends ListFragment {
 
     private ListView mListView;
-    private CustomTabsClient mCustomTabsClient;
     private CustomTabsIntent customTabsIntent;
     private Intent share;
-    private CustomTabsSession session;
 
     class NewsSite {
         String name, url;
@@ -68,23 +42,6 @@ public class NewsFragment extends ListFragment {
         }
     }
 
-    class NewsCustomTabsServiceConnection extends CustomTabsServiceConnection {
-        public static final String CUSTOM_TAB_PACKAGE_NAME = "com.android.chrome";
-        @Override
-        public void onCustomTabsServiceConnected(ComponentName name, CustomTabsClient client) {
-            mCustomTabsClient = client;
-            mCustomTabsClient.warmup(0);
-            session = mCustomTabsClient.newSession(null);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mCustomTabsClient = null;
-            session = null;
-            customTabsIntent = null;
-        }
-    }
-
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -99,39 +56,6 @@ public class NewsFragment extends ListFragment {
         builder.setStartAnimations(getContext(),
                 android.support.design.R.anim.abc_popup_enter,
                 android.support.design.R.anim.abc_popup_exit);
-//                    builder.setExitAnimations(getContext(),
-//                            android.support.design.R.anim.abc_popup_exit,
-//                            android.support.design.R.anim.abc_popup_enter);
-        CustomTabsServiceConnection connection = new NewsCustomTabsServiceConnection();
-        final ArrayList<String> URLs = new ArrayList<>();
-        ArrayList<String> titles = new ArrayList<>();
-        URLs.add("http://www.thedp.com/");
-        URLs.add("http://www.34st.com/");
-        URLs.add("http://www.thedp.com/blog/under-the-button/");
-        titles.add("The Daily Pennsylvanian");
-        titles.add("34th Street");
-        titles.add("Under the Button");
-        ArrayList<Bundle> urlList = new ArrayList<>();
-        for (int i = 0; i < URLs.size(); i++) {
-            Bundle bundle = new Bundle();
-            bundle.putParcelable(CustomTabsService.KEY_URL, new Parcelable() {
-                @Override
-                public int describeContents() {
-                    return 0;
-                }
-
-                @Override
-                public void writeToParcel(Parcel parcel, int i) {
-                    parcel.writeString(URLs.get(i));
-                }
-            });
-            urlList.add(bundle);
-        }
-//        Log.d("Is savedInstance null?", Boolean.toString(savedInstanceState == null));
-        // TODO fix null pointer exception for second argument in mayLaunchUrl
-//        session.mayLaunchUrl(Uri.parse(URLs.get(0)), null, urlList);
-        CustomTabsClient.bindCustomTabsService(getContext(),
-                NewsCustomTabsServiceConnection.CUSTOM_TAB_PACKAGE_NAME, connection);
         customTabsIntent = builder.build();
         addNews();
     }
@@ -147,7 +71,6 @@ public class NewsFragment extends ListFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_news, container, false);
         ButterKnife.bind(this, v);
-//        getDiningHalls();
         return v;
     }
 
@@ -167,8 +90,6 @@ public class NewsFragment extends ListFragment {
     public void onListItemClick(ListView l, View v, int position, long id) {
         String url = ((NewsSite) l.getItemAtPosition(position)).getUrl();
         if (url != null) {
-//                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-//                    startActivity(browserIntent);
             share.putExtra(Intent.EXTRA_TEXT, url);
             customTabsIntent.launchUrl(getActivity(), Uri.parse(url));
         }
