@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.StrictMode;
 import android.support.annotation.AnyRes;
 import android.support.annotation.NonNull;
@@ -60,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private ActionBarDrawerToggle mDrawerToggle;
     private static Labs mLabs;
     private boolean from_alarm;
-    private static final int CODE_MAP = 1, CODE_TRANSIT = 2;
+    public static final int CODE_MAP = 1, CODE_TRANSIT = 2, CODE_MAIN_CAL = 3;
     private boolean tab_showed;
 
     @Override
@@ -208,13 +207,13 @@ public class MainActivity extends AppCompatActivity {
                 fragment = new DiningFragment();
                 break;
             case R.id.nav_transit:
-                getPermission(CODE_TRANSIT);
+                getLocPermission(CODE_TRANSIT);
                 return;
             case R.id.nav_news:
                 fragment = new NewsFragment();
                 break;
             case R.id.nav_map:
-                getPermission(CODE_MAP);
+                getLocPermission(CODE_MAP);
                 return;
             case R.id.nav_laundry:
                 fragment = new LaundryFragment();
@@ -319,7 +318,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void getPermission(int code) {
+    private void getLocPermission(int code) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
                 PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) !=
@@ -366,33 +365,39 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        if (grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED) {
-            Toast.makeText(this, "Access of your location is required to use this feature.", Toast.LENGTH_LONG).show();
-            return;
-        }
-        final int code = requestCode;
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Fragment fragment = null;
-                switch(code) {
-                    case CODE_MAP:
-                        fragment = new MapFragment();
-                        break;
-                    case CODE_TRANSIT:
-                        fragment = new TransitFragment();
-                        break;
-                }
-                if (fragment != null) {
-                    FragmentManager fragmentManager = getSupportFragmentManager();
-                    fragmentManager.beginTransaction()
-                            .replace(R.id.content_frame, fragment)
-                            .addToBackStack(null)
-                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                            .commitAllowingStateLoss();
-                }
-                mDrawerLayout.closeDrawer(mDrawerList);
+        if (requestCode == CODE_MAP || requestCode == CODE_TRANSIT) {
+            if (grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED) {
+                Toast.makeText(this, "Access of your location is required to use this feature.", Toast.LENGTH_LONG).show();
+                return;
             }
-        });
+            final int code = requestCode;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Fragment fragment = null;
+                    switch (code) {
+                        case CODE_MAP:
+                            fragment = new MapFragment();
+                            break;
+                        case CODE_TRANSIT:
+                            fragment = new TransitFragment();
+                            break;
+                    }
+                    if (fragment != null) {
+                        FragmentManager fragmentManager = getSupportFragmentManager();
+                        fragmentManager.beginTransaction()
+                                .replace(R.id.content_frame, fragment)
+                                .addToBackStack(null)
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                                .commitAllowingStateLoss();
+                    }
+                    mDrawerLayout.closeDrawer(mDrawerList);
+                }
+            });
+        } else {
+            if (grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED) {
+                Toast.makeText(this, "Access of your calendar is required to use the calendar feature on the home page.", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 }

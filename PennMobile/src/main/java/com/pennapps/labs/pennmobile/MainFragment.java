@@ -1,11 +1,20 @@
 package com.pennapps.labs.pennmobile;
 
+import android.Manifest;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.CalendarContract;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
@@ -15,6 +24,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -22,8 +32,11 @@ import android.widget.TextView;
 import com.pennapps.labs.pennmobile.adapters.OnStartDragListener;
 import com.pennapps.labs.pennmobile.adapters.RecyclerListAdapter;
 import com.pennapps.labs.pennmobile.adapters.SimpleItemTouchHelperCallback;
+import com.pennapps.labs.pennmobile.classes.CalendarEvent;
 import com.pennapps.labs.pennmobile.classes.CustomViewHolder;
 
+
+import org.joda.time.DateTime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +62,7 @@ public class MainFragment extends Fragment implements OnStartDragListener{
                              Bundle savedInstanceState) {
         viewHolderList = new ArrayList<>();
         createWeatherView(inflater, container);
+//        createCalendarView(inflater, container);
         return new RecyclerView(container.getContext());
     }
 
@@ -88,6 +102,7 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         display.getSize(size);
         RelativeLayout layout = (RelativeLayout) inflater
                 .inflate(R.layout.main_custom, container, false);
+
         TextView tv = new TextView(getContext());
         tv.setId(SearchFavoriteTab.generateViewId());
         tv.setText("You should bring an umbrella today");
@@ -172,6 +187,68 @@ public class MainFragment extends Fragment implements OnStartDragListener{
 
 
         viewHolderList.add(new CustomViewHolder.WeatherViewHolder(layout));
-
     }
+
+    @SuppressWarnings("ResourceType")
+    public void createCalendarView(LayoutInflater inflater, ViewGroup container) {
+        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_CALENDAR) !=
+                PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat
+                    .requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION}, MainActivity.CODE_MAIN_CAL);
+        }
+        Display display = getActivity().getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        RelativeLayout layout = (RelativeLayout) inflater
+                .inflate(R.layout.main_custom, container, false);
+        //build Uri here with the fix time
+        Uri.Builder builder = CalendarContract.Calendars.CONTENT_URI.buildUpon();
+        DateTime today = new DateTime().withTimeAtStartOfDay();
+        ContentUris.appendId(builder, today.toDate().getTime());
+        DateTime tmr = today.plusDays(1).withTimeAtStartOfDay();
+        ContentUris.appendId(builder, tmr.toDate().getTime());
+
+        ContentResolver resolver = getContext().getContentResolver();
+        Cursor cursor = resolver.query(builder.build(), new String[] {
+                CalendarContract.Events.CALENDAR_ID, CalendarContract.Events.TITLE,
+                CalendarContract.Events.DTSTART, CalendarContract.Events.DTEND,
+                CalendarContract.Events.EVENT_LOCATION}, null, null,
+                CalendarContract.Events.DTSTART + "ASC");
+        if (cursor == null || cursor.getCount() == 0) {
+            layout.setBackgroundColor(getResources().getColor(R.color.graywhite));
+            ImageView iv = new ImageView(getContext());
+            RelativeLayout.LayoutParams param = new RelativeLayout
+                    .LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT);
+            iv.setLayoutParams(param);
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inSampleSize = 10;
+            options.inJustDecodeBounds = false;
+            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.beardedman, options);
+            iv.setImageBitmap(bitmap);
+            param.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
+            //in progress
+            return;
+        }
+        cursor.moveToFirst();
+        CalendarEvent[] events = new CalendarEvent[cursor.getCount()];
+        for (int i = 0; i < cursor.getCount(); i++) {
+            events[i] = new CalendarEvent(cursor.getString(2), cursor.getString(3),
+                    cursor.getString(1), cursor.getString(4));
+            cursor.moveToNext();
+        }
+        cursor.close();
+
+        Long lastEndTime = today.getMillis();
+        for (CalendarEvent event : events) {
+            if (event.endDate > lastEndTime) {
+                lastEndTime = event.endDate;
+            }
+        }
+        GridLayout gridLayout = new GridLayout(getContext());
+
+        //in progress
+    }
+
 }
