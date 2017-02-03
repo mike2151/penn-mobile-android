@@ -228,7 +228,7 @@ public class MainFragment extends Fragment implements OnStartDragListener{
             Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.beardedman, options);
             iv.setImageBitmap(bitmap);
             param.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
-            //in progress
+            layout.addView(iv);
             return;
         }
         cursor.moveToFirst();
@@ -247,8 +247,9 @@ public class MainFragment extends Fragment implements OnStartDragListener{
             }
         }
         GridLayout gridLayout = new GridLayout(getContext());
-
-        //in progress
+        CalendarEvent[][] grid = CalendarEvent.fillCalendarGrid(events);
+        gridLayout.setColumnCount(grid[0].length + 1); //need one more column for the time...
+        gridLayout.setRowCount(grid.length);
     }
 
 }
