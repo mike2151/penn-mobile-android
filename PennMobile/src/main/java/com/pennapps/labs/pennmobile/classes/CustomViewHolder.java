@@ -14,4 +14,10 @@ public class CustomViewHolder {
             super(itemView);
         }
     }
+
+    public static class CalendarHomeViewHolder extends RecyclerView.ViewHolder {
+        public CalendarHomeViewHolder(View itemView) {
+            super(itemView);
+        }
+    }
 }

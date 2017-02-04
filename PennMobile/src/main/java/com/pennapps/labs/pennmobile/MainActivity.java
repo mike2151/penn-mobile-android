@@ -1,6 +1,7 @@
 package com.pennapps.labs.pennmobile;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -139,6 +140,19 @@ public class MainActivity extends AppCompatActivity {
         setTitle(R.string.main_title);
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         manager.cancelAll();
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) !=
+                PackageManager.PERMISSION_GRANTED) {
+            final Activity a = this;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ActivityCompat
+                            .requestPermissions(a, new String[]{Manifest.permission.READ_CALENDAR}, CODE_MAIN_CAL);
+                }
+            });
+        }
+
         if (from_alarm) {
             navigateLayout(R.id.nav_laundry);
         }
@@ -397,6 +411,10 @@ public class MainActivity extends AppCompatActivity {
         } else {
             if (grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED) {
                 Toast.makeText(this, "Access of your calendar is required to use the calendar feature on the home page.", Toast.LENGTH_LONG).show();
+            } else {
+                FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
+                tx.replace(R.id.content_frame, new MainFragment());
+                tx.commit();
             }
         }
     }

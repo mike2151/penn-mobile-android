@@ -14,11 +14,14 @@ import java.util.TreeMap;
  */
 
 public class CalendarEvent {
-    public Long startDate;
-    public Long endDate;
+    public long startDate;
+    public long endDate;
     public String title;
     public String location;
     public int color;
+    public int colSpan;
+    public int totalGrids;
+
     public final static int[] colors = {0xFF95CFAF, 0xFFF26E67, 0xFFFFC107, 0x4990E2, 0xFFAC92EC};
 
     public CalendarEvent(String startDate, String endDate, String title, String location) {
@@ -26,6 +29,7 @@ public class CalendarEvent {
         this.endDate = Long.parseLong(endDate);
         this.title = title;
         this.location = location;
+        this.totalGrids = 0;
     }
 
     private static void swap(CalendarEvent[][] grid, int x, int x2) {
@@ -63,6 +67,10 @@ public class CalendarEvent {
                 cm *= i;
             }
         }
+        //find colspan
+        for (int i = 0; i < overlap.length; i++) {
+            events[i].colSpan = cm / overlap[i];
+        }
         //fill grid
         Iterator<Map.Entry<Long, CalendarEvent>> iter = specialTime.entrySet().iterator();
         iter.next();
@@ -71,7 +79,12 @@ public class CalendarEvent {
             grid[0][i] = events[0];
         }
         for (int i = 1; i < specialTime.size(); i++) {
-            System.arraycopy(grid[i - 1], 0, grid[i], 0, cm);
+            for (int j = 0; j < grid[i].length; j++) {
+                grid[i][j] = grid[i-1][j];
+                if (grid[i][j] != null) {
+                    grid[i][j].totalGrids++;
+                }
+            }
             Map.Entry<Long, CalendarEvent> entry = iter.next();
             CalendarEvent event = entry.getValue();
             if (entry.getKey().equals(event.startDate)) {
@@ -152,6 +165,7 @@ public class CalendarEvent {
             if (fit) {
                 for (int l = 0; l < grid[0].length / i; l++) {
                     calendarEvents[k + l] = event;
+                    event.totalGrids++;
                 }
                 in = true;
             }
@@ -340,9 +354,8 @@ public class CalendarEvent {
 
         CalendarEvent that = (CalendarEvent) o;
 
-        if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
-            return false;
-        if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null) return false;
+        if (startDate != that.startDate) return false;
+        if (endDate != that.endDate) return false;
         if (title != null ? !title.equals(that.title) : that.title != null) return false;
         return location != null ? location.equals(that.location) : that.location == null;
 
@@ -350,8 +363,8 @@ public class CalendarEvent {
 
     @Override
     public int hashCode() {
-        int result = startDate != null ? startDate.hashCode() : 0;
-        result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
+        int result = (int) (startDate ^ (startDate >>> 32));
+        result = 31 * result + (int) (endDate ^ (endDate >>> 32));
         result = 31 * result + (title != null ? title.hashCode() : 0);
         result = 31 * result + (location != null ? location.hashCode() : 0);
         return result;

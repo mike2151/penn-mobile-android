@@ -18,6 +18,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -39,7 +40,11 @@ import com.pennapps.labs.pennmobile.classes.CustomViewHolder;
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 
 public class MainFragment extends Fragment implements OnStartDragListener{
@@ -61,8 +66,11 @@ public class MainFragment extends Fragment implements OnStartDragListener{
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         viewHolderList = new ArrayList<>();
-        createWeatherView(inflater, container);
-//        createCalendarView(inflater, container);
+//        createWeatherView(inflater, container);
+        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_CALENDAR) ==
+                PackageManager.PERMISSION_GRANTED) {
+            createCalendarView(inflater, container);
+        }
         return new RecyclerView(container.getContext());
     }
 
@@ -203,18 +211,17 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         RelativeLayout layout = (RelativeLayout) inflater
                 .inflate(R.layout.main_custom, container, false);
         //build Uri here with the fix time
-        Uri.Builder builder = CalendarContract.Calendars.CONTENT_URI.buildUpon();
+//               Uri.Builder builder = CalendarContract.Events.CONTENT_URI.buildUpon();
         DateTime today = new DateTime().withTimeAtStartOfDay();
-        ContentUris.appendId(builder, today.toDate().getTime());
-        DateTime tmr = today.plusDays(1).withTimeAtStartOfDay();
-        ContentUris.appendId(builder, tmr.toDate().getTime());
+//        ContentUris.appendId(builder, today.toDate().getTime());
+//        DateTime tmr = today.plusDays(1).withTimeAtStartOfDay();
+//        ContentUris.appendId(builder, tmr.toDate().getTime());
 
         ContentResolver resolver = getContext().getContentResolver();
-        Cursor cursor = resolver.query(builder.build(), new String[] {
+        Cursor cursor = resolver.query(CalendarContract.Events.CONTENT_URI, new String[] {
                 CalendarContract.Events.CALENDAR_ID, CalendarContract.Events.TITLE,
                 CalendarContract.Events.DTSTART, CalendarContract.Events.DTEND,
-                CalendarContract.Events.EVENT_LOCATION}, null, null,
-                CalendarContract.Events.DTSTART + "ASC");
+                CalendarContract.Events.EVENT_LOCATION}, null, null, null);
         if (cursor == null || cursor.getCount() == 0) {
             layout.setBackgroundColor(getResources().getColor(R.color.graywhite));
             ImageView iv = new ImageView(getContext());
@@ -231,15 +238,18 @@ public class MainFragment extends Fragment implements OnStartDragListener{
             layout.addView(iv);
             return;
         }
-        cursor.moveToFirst();
-        CalendarEvent[] events = new CalendarEvent[cursor.getCount()];
-        for (int i = 0; i < cursor.getCount(); i++) {
-            events[i] = new CalendarEvent(cursor.getString(2), cursor.getString(3),
-                    cursor.getString(1), cursor.getString(4));
-            cursor.moveToNext();
+        ArrayList<CalendarEvent> eventList = new ArrayList<>(cursor.getCount());
+        while (cursor.moveToNext()) {
+            if (cursor.getString(2) != null && !cursor.getString(2).equals("")
+                    && cursor.getString(3) != null && !cursor.getString(3).equals("")) {
+                eventList.add(new CalendarEvent(cursor.getString(2), cursor.getString(3),
+                        cursor.getString(1), cursor.getString(4)));
+            }
         }
         cursor.close();
 
+        CalendarEvent[] events = new CalendarEvent[eventList.size()];
+        eventList.toArray(events);
         Long lastEndTime = today.getMillis();
         for (CalendarEvent event : events) {
             if (event.endDate > lastEndTime) {
@@ -248,8 +258,50 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         }
         GridLayout gridLayout = new GridLayout(getContext());
         CalendarEvent[][] grid = CalendarEvent.fillCalendarGrid(events);
+        // need to collapse and add rows...
+        PriorityQueue<Long> specialTime = new PriorityQueue<>();
+        for (CalendarEvent event : events) {
+            specialTime.add(event.startDate);
+        }
         gridLayout.setColumnCount(grid[0].length + 1); //need one more column for the time...
-        gridLayout.setRowCount(grid.length);
+        gridLayout.setRowCount(specialTime.size());
+        Set<CalendarEvent> eventsToPut = new HashSet<>();
+        for (int i = 0; i <= specialTime.size(); i++) {
+            long currentTime = specialTime.poll();
+            TextView tv = new TextView(getContext());
+            Calendar c = Calendar.getInstance();
+            c.setTimeInMillis(currentTime);
+            String text = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE);
+            tv.setText(text);
+            for (int j = 0; j < grid[0].length; j++) {
+                //insert if haven't seen before
+                if (grid[i][j] != null && !eventsToPut.contains(grid[i][j]) && grid[i][j].startDate == currentTime) {
+                    eventsToPut.add(grid[i][j]);
+                    tv = new TextView(getContext());
+                    CalendarEvent current = grid[i][j];
+                    text = current.title + "\n" + current.location;
+                    tv.setText(text);
+                    tv.setBackgroundColor(current.color);
+                    GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+
+                    params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, current.colSpan);
+                    params.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, current.totalGrids / current.colSpan);
+
+                    tv.setLayoutParams(params);
+                    gridLayout.addView(tv);
+                } else if (grid[i][j] == null) {
+                    //insert empty
+                    View v = new View(getContext());
+                    GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+                    params.height = 0;
+                    params.width = 0;
+                    v.setLayoutParams(params);
+                    gridLayout.addView(v);
+                }
+            }
+        }
+        layout.addView(gridLayout);
+        viewHolderList.add(new CustomViewHolder.CalendarHomeViewHolder(layout));
     }
 
 }
