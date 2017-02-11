@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.Set;
 
@@ -210,18 +211,24 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         display.getSize(size);
         RelativeLayout layout = (RelativeLayout) inflater
                 .inflate(R.layout.main_custom, container, false);
-        //build Uri here with the fix time
-//               Uri.Builder builder = CalendarContract.Events.CONTENT_URI.buildUpon();
+        Uri.Builder eventsUriBuilder = CalendarContract.Instances.CONTENT_URI
+                .buildUpon();
         DateTime today = new DateTime().withTimeAtStartOfDay();
-//        ContentUris.appendId(builder, today.toDate().getTime());
-//        DateTime tmr = today.plusDays(1).withTimeAtStartOfDay();
-//        ContentUris.appendId(builder, tmr.toDate().getTime());
-
-        ContentResolver resolver = getContext().getContentResolver();
-        Cursor cursor = resolver.query(CalendarContract.Events.CONTENT_URI, new String[] {
+        ContentUris.appendId(eventsUriBuilder, today.toDate().getTime());
+        DateTime tmr = today.plusDays(1).withTimeAtStartOfDay();
+        ContentUris.appendId(eventsUriBuilder, tmr.toDate().getTime());
+        Uri eventsUri = eventsUriBuilder.build();
+        Cursor cursor = null;
+        cursor = getContext().getContentResolver().query(eventsUri, new String[] {
                 CalendarContract.Events.CALENDAR_ID, CalendarContract.Events.TITLE,
                 CalendarContract.Events.DTSTART, CalendarContract.Events.DTEND,
-                CalendarContract.Events.EVENT_LOCATION}, null, null, null);
+                CalendarContract.Events.EVENT_LOCATION, CalendarContract.Events.DURATION},
+                null, null, CalendarContract.Instances.DTSTART + " ASC");
+        //build Uri here with the fix time
+//               Uri.Builder builder = CalendarContract.Events.CONTENT_URI.buildUpon();
+
+//        ContentResolver resolver = getContext().getContentResolver();
+//        Cursor cursor = resolver.query(CalendarContract.Events.CONTENT_URI, , null, null, null);
         if (cursor == null || cursor.getCount() == 0) {
             layout.setBackgroundColor(getResources().getColor(R.color.graywhite));
             ImageView iv = new ImageView(getContext());
@@ -240,11 +247,17 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         }
         ArrayList<CalendarEvent> eventList = new ArrayList<>(cursor.getCount());
         while (cursor.moveToNext()) {
-            if (cursor.getString(2) != null && !cursor.getString(2).equals("")
-                    && cursor.getString(3) != null && !cursor.getString(3).equals("")) {
-                eventList.add(new CalendarEvent(cursor.getString(2), cursor.getString(3),
-                        cursor.getString(1), cursor.getString(4)));
+            if (cursor.getString(2) != null && !cursor.getString(2).equals("")) { //if start time is not null{
+                if (cursor.getString(3) != null && !cursor.getString(3).equals("")) {//end time not null
+                    eventList.add(new CalendarEvent(cursor.getString(2), cursor.getString(3),
+                            cursor.getString(1), cursor.getString(4)));
+                } else if (cursor.getString(5) != null) {
+                    eventList.add(new CalendarEvent(cursor.getString(2),
+                            CalendarEvent.RFC2445ToMilliseconds(cursor.getString(5)),
+                                    cursor.getString(1), cursor.getString(4)));
+                }
             }
+            Log.d("TAG", "event:" + cursor.getString(2));
         }
         cursor.close();
 
@@ -262,44 +275,70 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         PriorityQueue<Long> specialTime = new PriorityQueue<>();
         for (CalendarEvent event : events) {
             specialTime.add(event.startDate);
+            specialTime.add(event.endDate);
         }
         gridLayout.setColumnCount(grid[0].length + 1); //need one more column for the time...
         gridLayout.setRowCount(specialTime.size());
         Set<CalendarEvent> eventsToPut = new HashSet<>();
-        for (int i = 0; i <= specialTime.size(); i++) {
+        int offset = 0; //the number of times we have an extra row
+        int rowCount = specialTime.size(); //copy it because now specialTime will be changed inside the loop
+        for (int i = 0; i < rowCount; i++) {
             long currentTime = specialTime.poll();
             TextView tv = new TextView(getContext());
             Calendar c = Calendar.getInstance();
             c.setTimeInMillis(currentTime);
-            String text = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE);
+            String text = c.get(Calendar.HOUR) + ":" + String.format(Locale.getDefault(),
+                    "%02d", c.get(Calendar.MINUTE));
             tv.setText(text);
+
+            GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+            params.width = 200;
+            tv.setLayoutParams(params);
+            gridLayout.addView(tv);
+
+            //want to check if this row is extra
+            boolean hasStuff = false;
+
             for (int j = 0; j < grid[0].length; j++) {
                 //insert if haven't seen before
-                if (grid[i][j] != null && !eventsToPut.contains(grid[i][j]) && grid[i][j].startDate == currentTime) {
-                    eventsToPut.add(grid[i][j]);
+                if (i-offset < grid.length && grid[i-offset][j] != null &&
+                        !eventsToPut.contains(grid[i-offset][j])
+                        && grid[i-offset][j].startDate == currentTime) {
+                    eventsToPut.add(grid[i-offset][j]);
                     tv = new TextView(getContext());
-                    CalendarEvent current = grid[i][j];
-                    text = current.title + "\n" + current.location;
+                    CalendarEvent current = grid[i-offset][j];
+                    text = "  " + current.title + "\n  " + current.location;
                     tv.setText(text);
                     tv.setBackgroundColor(current.color);
-                    GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+                    params = new GridLayout.LayoutParams();
 
                     params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, current.colSpan);
                     params.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, current.totalGrids / current.colSpan);
+                    params.width = (int) (size.x * 0.9) / (current.colSpan)- 200;
 
                     tv.setLayoutParams(params);
                     gridLayout.addView(tv);
-                } else if (grid[i][j] == null) {
+                    hasStuff = true;
+                    //think there's still a j bug here
+                } else {
                     //insert empty
                     View v = new View(getContext());
-                    GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+                    params = new GridLayout.LayoutParams();
                     params.height = 0;
                     params.width = 0;
                     v.setLayoutParams(params);
                     gridLayout.addView(v);
                 }
             }
+            if (!hasStuff) {
+                offset++;
+            }
         }
+        RelativeLayout.LayoutParams gridParam = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        gridParam.leftMargin = size.x / 20;
+        gridParam.rightMargin = size.x / 20;
+        gridLayout.setLayoutParams(gridParam);
         layout.addView(gridLayout);
         viewHolderList.add(new CustomViewHolder.CalendarHomeViewHolder(layout));
     }

@@ -32,6 +32,14 @@ public class CalendarEvent {
         this.totalGrids = 0;
     }
 
+    public CalendarEvent(String startDate, long duration, String title, String location) {
+        this.startDate = Long.parseLong(startDate);
+        this.endDate = this.startDate + duration;
+        this.title = title;
+        this.location = location;
+        this.totalGrids = 0;
+    }
+
     private static void swap(CalendarEvent[][] grid, int x, int x2) {
         for (int i = 0; i < grid.length; i++) {
             CalendarEvent temp = grid[i][x];
@@ -379,5 +387,109 @@ public class CalendarEvent {
             }
         }
         return count;
+    }
+
+    /**
+     * From http://stackoverflow.com/questions/30890829/parse-calendarcontract-events-duration-values
+     * Parse RFC into milli seconds
+     * @param str the RFC2445 string
+     * @return a long for milliseconds
+     */
+    public static long RFC2445ToMilliseconds(String str)
+    {
+        if(str == null || str.isEmpty())
+            throw new IllegalArgumentException("Null or empty RFC string");
+
+        int sign = 1;
+        int weeks = 0;
+        int days = 0;
+        int hours = 0;
+        int minutes = 0;
+        int seconds = 0;
+
+        int len = str.length();
+        int index = 0;
+        char c;
+
+        c = str.charAt(0);
+
+        if (c == '-')
+        {
+            sign = -1;
+            index++;
+        }
+
+        else if (c == '+')
+            index++;
+
+        if (len < index)
+            return 0;
+
+        c = str.charAt(index);
+
+        if (c != 'P')
+            throw new IllegalArgumentException("Duration.parse(str='" + str + "') expected 'P' at index="+ index);
+
+        index++;
+        c = str.charAt(index);
+        if (c == 'T')
+            index++;
+
+        int n = 0;
+        for (; index < len; index++)
+        {
+            c = str.charAt(index);
+
+            if (c >= '0' && c <= '9')
+            {
+                n *= 10;
+                n += ((int)(c-'0'));
+            }
+
+            else if (c == 'W')
+            {
+                weeks = n;
+                n = 0;
+            }
+
+            else if (c == 'H')
+            {
+                hours = n;
+                n = 0;
+            }
+
+            else if (c == 'M')
+            {
+                minutes = n;
+                n = 0;
+            }
+
+            else if (c == 'S')
+            {
+                seconds = n;
+                n = 0;
+            }
+
+            else if (c == 'D')
+            {
+                days = n;
+                n = 0;
+            }
+
+            else if (c == 'T')
+            {
+            }
+            else
+                throw new IllegalArgumentException ("Duration.parse(str='" + str + "') unexpected char '" + c + "' at index=" + index);
+        }
+
+        long factor = 1000 * sign;
+        long result = factor * ((7*24*60*60*weeks)
+                + (24*60*60*days)
+                + (60*60*hours)
+                + (60*minutes)
+                + seconds);
+
+        return result;
     }
 }
