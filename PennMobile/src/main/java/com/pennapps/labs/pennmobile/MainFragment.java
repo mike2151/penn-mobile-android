@@ -50,6 +50,9 @@ import java.util.Set;
 
 public class MainFragment extends Fragment implements OnStartDragListener{
 
+    private static final int TIMEWIDTH = 200;
+    private static final int EVENTHEIGHT = 180;
+
     private ItemTouchHelper mItemTouchHelper;
     private List<RecyclerView.ViewHolder> viewHolderList;
 
@@ -287,12 +290,15 @@ public class MainFragment extends Fragment implements OnStartDragListener{
             TextView tv = new TextView(getContext());
             Calendar c = Calendar.getInstance();
             c.setTimeInMillis(currentTime);
-            String text = c.get(Calendar.HOUR) + ":" + String.format(Locale.getDefault(),
-                    "%02d", c.get(Calendar.MINUTE));
-            tv.setText(text);
+            StringBuilder builder = new StringBuilder();
+            builder.append(c.get(Calendar.HOUR) == 0 ? 12 : c.get(Calendar.HOUR));
+            builder.append(":").append(String.format(Locale.getDefault(),
+                    "%02d", c.get(Calendar.MINUTE)));
+            builder.append(c.get(Calendar.AM_PM) == 1 ? "PM" : "AM");
+            tv.setText(builder.toString());
 
             GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-            params.width = 200;
+            params.width = TIMEWIDTH;
             tv.setLayoutParams(params);
             gridLayout.addView(tv);
 
@@ -307,20 +313,25 @@ public class MainFragment extends Fragment implements OnStartDragListener{
                     eventsToPut.add(grid[i-offset][j]);
                     tv = new TextView(getContext());
                     CalendarEvent current = grid[i-offset][j];
-                    text = "  " + current.title + "\n  " + current.location;
-                    tv.setText(text);
+                    builder = new StringBuilder();
+                    builder.append(current.title).append("\n");
+                    builder.append(current.location);
+                    tv.setText(builder.toString());
                     tv.setBackgroundColor(current.color);
                     params = new GridLayout.LayoutParams();
 
                     params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, current.colSpan);
                     params.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, current.totalGrids / current.colSpan);
-                    params.width = (int) (size.x * 0.9) / (current.colSpan)- 200;
-
+                    params.width = (int) (size.x * 0.9) / (current.colSpan)- TIMEWIDTH;
+                    params.height = EVENTHEIGHT;
+                    tv.setPadding(50, 10, 10, 10);
+                    tv.setMaxLines(2);
                     tv.setLayoutParams(params);
                     gridLayout.addView(tv);
                     hasStuff = true;
-                    //think there's still a j bug here
-                } else {
+                } else if (!(i-offset < grid.length && eventsToPut.contains(grid[i-offset][j]))) {
+                    //put an empty view unless this tile should've been something else that has been
+                    //put in already
                     //insert empty
                     View v = new View(getContext());
                     params = new GridLayout.LayoutParams();
@@ -340,6 +351,7 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         gridParam.rightMargin = size.x / 20;
         gridLayout.setLayoutParams(gridParam);
         layout.addView(gridLayout);
+        layout.setPadding(0,16,16,0);
         viewHolderList.add(new CustomViewHolder.CalendarHomeViewHolder(layout));
     }
 
