@@ -26,6 +26,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.GridLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -117,6 +118,8 @@ public class MainFragment extends Fragment implements OnStartDragListener{
 
         TextView tv = new TextView(getContext());
         tv.setId(SearchFavoriteTab.generateViewId());
+        //TODO: add Weather api hook
+        //TODO: add more strings, depending n the weather
         tv.setText("You should bring an umbrella today");
         tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         RelativeLayout.LayoutParams params = new RelativeLayout
@@ -136,6 +139,7 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = 10;
         options.inJustDecodeBounds = false;
+        //TODO: change different photos depending on weather
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.h01d, options);
         iv.setImageBitmap(bitmap);
         params2.addRule(RelativeLayout.BELOW, tv.getId());
@@ -214,6 +218,9 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         display.getSize(size);
         RelativeLayout layout = (RelativeLayout) inflater
                 .inflate(R.layout.main_custom, container, false);
+        //TODO: Add in a bar here if there is a "special" day soon.
+
+        //build Uri here with the fix time
         Uri.Builder eventsUriBuilder = CalendarContract.Instances.CONTENT_URI
                 .buildUpon();
         DateTime today = new DateTime().withTimeAtStartOfDay();
@@ -227,11 +234,6 @@ public class MainFragment extends Fragment implements OnStartDragListener{
                 CalendarContract.Events.DTSTART, CalendarContract.Events.DTEND,
                 CalendarContract.Events.EVENT_LOCATION, CalendarContract.Events.DURATION},
                 null, null, CalendarContract.Instances.DTSTART + " ASC");
-        //build Uri here with the fix time
-//               Uri.Builder builder = CalendarContract.Events.CONTENT_URI.buildUpon();
-
-//        ContentResolver resolver = getContext().getContentResolver();
-//        Cursor cursor = resolver.query(CalendarContract.Events.CONTENT_URI, , null, null, null);
         if (cursor == null || cursor.getCount() == 0) {
             layout.setBackgroundColor(getResources().getColor(R.color.graywhite));
             ImageView iv = new ImageView(getContext());
@@ -352,6 +354,21 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         gridLayout.setLayoutParams(gridParam);
         layout.addView(gridLayout);
         layout.setPadding(0,16,16,0);
+
+        ImageButton imageButton = new ImageButton(getContext());
+        Bitmap arrow = BitmapFactory.decodeResource(getResources(), R.drawable.ic_chevron_right_black_36dp);
+        Bitmap buffer = arrow;
+        arrow = Bitmap.createScaledBitmap(buffer, (int) (buffer.getWidth()/1.8), (int) (buffer.getHeight()/1.8), false);
+        buffer.recycle();
+        imageButton.setImageBitmap(arrow);
+        imageButton.setBackground(null);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT
+                );
+        params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, RelativeLayout.TRUE);
+        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+        imageButton.setLayoutParams(params);
+        layout.addView(imageButton);
         viewHolderList.add(new CustomViewHolder.CalendarHomeViewHolder(layout));
     }
 
