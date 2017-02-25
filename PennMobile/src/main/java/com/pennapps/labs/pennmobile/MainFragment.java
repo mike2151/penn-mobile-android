@@ -1,24 +1,20 @@
 package com.pennapps.labs.pennmobile;
 
 import android.Manifest;
-import android.content.ContentResolver;
-import android.content.ContentUris;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.CalendarContract;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -28,34 +24,47 @@ import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.pennapps.labs.pennmobile.adapters.OnStartDragListener;
 import com.pennapps.labs.pennmobile.adapters.RecyclerListAdapter;
 import com.pennapps.labs.pennmobile.adapters.SimpleItemTouchHelperCallback;
+import com.pennapps.labs.pennmobile.api.Labs;
 import com.pennapps.labs.pennmobile.classes.CalendarEvent;
-import com.pennapps.labs.pennmobile.classes.CustomViewHolder;
+import com.pennapps.labs.pennmobile.classes.Course;
+import com.pennapps.labs.pennmobile.classes.Weather;
 
 
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import rx.functions.Action1;
 
-public class MainFragment extends Fragment implements OnStartDragListener{
+
+public class MainFragment extends Fragment {
+
 
     private static final int TIMEWIDTH = 200;
     private static final int EVENTHEIGHT = 180;
 
-    private ItemTouchHelper mItemTouchHelper;
-    private List<RecyclerView.ViewHolder> viewHolderList;
+    private Labs mLabs;
+    private HashMap<String, Bitmap> bitmapMap;
+
+    private HashMap<String, View> viewMap;
+    // map keys
+    private static final String WEATHER_IMAGE_KEY = "weather image";
+    private static final String TEMPERATURE_KEY = "temperature";
 
     public MainFragment() {
         // Required empty public constructor
@@ -65,35 +74,19 @@ public class MainFragment extends Fragment implements OnStartDragListener{
     public void onCreate(Bundle savedInstanceState) {
         ((MainActivity) getActivity()).closeKeyboard();
         super.onCreate(savedInstanceState);
+        viewMap = new HashMap<>();
+        bitmapMap = new HashMap<>();
+        mLabs = MainActivity.getLabsInstance();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        viewHolderList = new ArrayList<>();
-//        createWeatherView(inflater, container);
-        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_CALENDAR) ==
-                PackageManager.PERMISSION_GRANTED) {
-            createCalendarView(inflater, container);
-        }
-        return new RecyclerView(container.getContext());
-    }
-
-    @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-
-        RecyclerListAdapter adapter = new RecyclerListAdapter(viewHolderList, this);
-
-        RecyclerView recyclerView = (RecyclerView) view;
-        recyclerView.setHasFixedSize(true);
-        recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-
-        ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
-        mItemTouchHelper = new ItemTouchHelper(callback);
-        mItemTouchHelper.attachToRecyclerView(recyclerView);
+        View v = inflater.inflate(R.layout.fragment_main, container, false);
+        LinearLayout ll = (LinearLayout) v.findViewById(R.id.main_ll);
+        createWeatherView(inflater, ll);
+        createCalendarView(inflater, ll);
+        return v;
     }
 
     @Override
@@ -103,10 +96,6 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         ((MainActivity) getActivity()).setNav(R.id.nav_home);
     }
 
-    @Override
-    public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
-        mItemTouchHelper.startDrag(viewHolder);
-    }
 
     @SuppressWarnings("ResourceType")
     public void createWeatherView(LayoutInflater inflater, ViewGroup container) {
@@ -118,8 +107,6 @@ public class MainFragment extends Fragment implements OnStartDragListener{
 
         TextView tv = new TextView(getContext());
         tv.setId(SearchFavoriteTab.generateViewId());
-        //TODO: add Weather api hook
-        //TODO: add more strings, depending n the weather
         tv.setText("You should bring an umbrella today");
         tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         RelativeLayout.LayoutParams params = new RelativeLayout
@@ -139,14 +126,14 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = 10;
         options.inJustDecodeBounds = false;
-        //TODO: change different photos depending on weather
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.h01d, options);
+        final Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.h01d, options);
         iv.setImageBitmap(bitmap);
         params2.addRule(RelativeLayout.BELOW, tv.getId());
         params2.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
         params2.topMargin = - size.y / 25;
         iv.setId(SearchFavoriteTab.generateViewId());
         layout.addView(iv);
+        viewMap.put(WEATHER_IMAGE_KEY, iv);
 
         RelativeLayout rl = new RelativeLayout(getContext());
         RelativeLayout.LayoutParams params3 = new RelativeLayout
@@ -201,8 +188,31 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         tv4.setText("50\u00b0");
         rl.addView(tv4);
 
+        viewMap.put(TEMPERATURE_KEY, tv4);
 
-        viewHolderList.add(new CustomViewHolder.WeatherViewHolder(layout));
+        mLabs.weather().subscribe(new Action1<Weather>() {
+                                      @Override
+                                      public void call(final Weather weather) {
+                                          TextView tv = (TextView) viewMap.get(TEMPERATURE_KEY);
+                                          tv.setText(weather.main.temp + "");
+                                          String mapId = weather.weather.get(0).icon;
+                                          ImageView iv = (ImageView) viewMap.get(WEATHER_IMAGE_KEY);
+                                          if (bitmapMap.containsKey(weather.weather.get(0).icon)) {
+                                              iv.setImageBitmap(bitmapMap.get(mapId));
+                                          } else {
+                                              Bitmap bitmap = BitmapFactory.decodeResource(getResources(),
+                                                      Weather.getIconId(mapId));
+                                              bitmapMap.put(mapId, bitmap);
+                                          }
+                                      }
+                                  }, new Action1<Throwable>() {
+                                      @Override
+                                      public void call(Throwable throwable) {
+                                          Toast.makeText(getContext(), "Can't get weather", Toast.LENGTH_LONG)
+                                                  .show();
+                                      }
+                                  });
+        container.addView(layout);
     }
 
     @SuppressWarnings("ResourceType")
@@ -210,8 +220,9 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_CALENDAR) !=
                 PackageManager.PERMISSION_GRANTED) {
             ActivityCompat
-                    .requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION}, MainActivity.CODE_MAIN_CAL);
+                    .requestPermissions(getActivity(), new String[]{Manifest.permission.READ_CALENDAR}
+                            , MainActivity.CODE_MAIN_CAL);
+            return;
         }
         Display display = getActivity().getWindowManager().getDefaultDisplay();
         Point size = new Point();
@@ -220,21 +231,11 @@ public class MainFragment extends Fragment implements OnStartDragListener{
                 .inflate(R.layout.main_custom, container, false);
         //TODO: Add in a bar here if there is a "special" day soon.
 
-        //build Uri here with the fix time
-        Uri.Builder eventsUriBuilder = CalendarContract.Instances.CONTENT_URI
-                .buildUpon();
-        DateTime today = new DateTime().withTimeAtStartOfDay();
-        ContentUris.appendId(eventsUriBuilder, today.toDate().getTime());
-        DateTime tmr = today.plusDays(1).withTimeAtStartOfDay();
-        ContentUris.appendId(eventsUriBuilder, tmr.toDate().getTime());
-        Uri eventsUri = eventsUriBuilder.build();
-        Cursor cursor = null;
-        cursor = getContext().getContentResolver().query(eventsUri, new String[] {
-                CalendarContract.Events.CALENDAR_ID, CalendarContract.Events.TITLE,
-                CalendarContract.Events.DTSTART, CalendarContract.Events.DTEND,
-                CalendarContract.Events.EVENT_LOCATION, CalendarContract.Events.DURATION},
-                null, null, CalendarContract.Instances.DTSTART + " ASC");
-        if (cursor == null || cursor.getCount() == 0) {
+        //TODO: Check the database if we have any events.
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
+
+        ArrayList<Course> courses = new ArrayList<>();
+        if (courses.isEmpty()) {
             layout.setBackgroundColor(getResources().getColor(R.color.graywhite));
             ImageView iv = new ImageView(getContext());
             RelativeLayout.LayoutParams param = new RelativeLayout
@@ -248,27 +249,18 @@ public class MainFragment extends Fragment implements OnStartDragListener{
             iv.setImageBitmap(bitmap);
             param.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
             layout.addView(iv);
+            container.addView(layout);
             return;
         }
-        ArrayList<CalendarEvent> eventList = new ArrayList<>(cursor.getCount());
-        while (cursor.moveToNext()) {
-            if (cursor.getString(2) != null && !cursor.getString(2).equals("")) { //if start time is not null{
-                if (cursor.getString(3) != null && !cursor.getString(3).equals("")) {//end time not null
-                    eventList.add(new CalendarEvent(cursor.getString(2), cursor.getString(3),
-                            cursor.getString(1), cursor.getString(4)));
-                } else if (cursor.getString(5) != null) {
-                    eventList.add(new CalendarEvent(cursor.getString(2),
-                            CalendarEvent.RFC2445ToMilliseconds(cursor.getString(5)),
-                                    cursor.getString(1), cursor.getString(4)));
-                }
-            }
-            Log.d("TAG", "event:" + cursor.getString(2));
+        ArrayList<CalendarEvent> eventList = new ArrayList<>(courses.size());
+        for (Course c : courses) {
+            eventList.add(new CalendarEvent(c.getMeetingStartTimeInMilli(), c.getMeetingEndTimeInMilli(),
+                    c.course_title, c.getMeetingLocation()));
         }
-        cursor.close();
 
         CalendarEvent[] events = new CalendarEvent[eventList.size()];
         eventList.toArray(events);
-        Long lastEndTime = today.getMillis();
+        Long lastEndTime = (new DateTime()).withTimeAtStartOfDay().getMillis();
         for (CalendarEvent event : events) {
             if (event.endDate > lastEndTime) {
                 lastEndTime = event.endDate;
@@ -369,7 +361,7 @@ public class MainFragment extends Fragment implements OnStartDragListener{
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
         imageButton.setLayoutParams(params);
         layout.addView(imageButton);
-        viewHolderList.add(new CustomViewHolder.CalendarHomeViewHolder(layout));
+        container.addView(layout);
     }
 
 }

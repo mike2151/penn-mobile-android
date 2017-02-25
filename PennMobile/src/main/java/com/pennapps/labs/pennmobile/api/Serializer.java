@@ -15,6 +15,7 @@ import com.pennapps.labs.pennmobile.classes.DiningHall;
 import com.pennapps.labs.pennmobile.classes.LaundryRoom;
 import com.pennapps.labs.pennmobile.classes.LaundryMachine;
 import com.pennapps.labs.pennmobile.classes.Venue;
+import com.pennapps.labs.pennmobile.classes.Weather;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -129,6 +130,16 @@ public class Serializer {
                 throws JsonParseException {
             JsonElement content = je.getAsJsonObject().get("machines");
             return new Gson().fromJson(content, new TypeToken<List<LaundryMachine>>(){}.getType());
+        }
+    }
+
+    public static class WeatherSerializer implements JsonDeserializer<Weather> {
+        @Override
+        public Weather deserialize(JsonElement je, Type type, JsonDeserializationContext jdc)
+                throws JsonParseException {
+            JsonElement content = je.getAsJsonObject().get("weather_data");
+
+            return new Gson().fromJson(content, new TypeToken<Weather>(){}.getType());
         }
     }
 }

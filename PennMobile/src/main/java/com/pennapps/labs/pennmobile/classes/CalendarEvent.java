@@ -32,9 +32,9 @@ public class CalendarEvent {
         this.totalGrids = 0;
     }
 
-    public CalendarEvent(String startDate, long duration, String title, String location) {
-        this.startDate = Long.parseLong(startDate);
-        this.endDate = this.startDate + duration;
+    public CalendarEvent(long startDate, long endDate, String title, String location) {
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.title = title;
         this.location = location;
         this.totalGrids = 0;

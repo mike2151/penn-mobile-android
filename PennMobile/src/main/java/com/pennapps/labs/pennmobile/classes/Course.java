@@ -5,8 +5,13 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -127,12 +132,40 @@ public class Course implements Parcelable {
         return "";
     }
 
+    /**
+     * Get the class's start time of TODAY regardless of whether it is up for today
+     * @return milli long since epoch
+     */
+    @NonNull
+    public long getMeetingStartTimeInMilli() {
+        String s = getMeetingStartTime();
+        if (s.isEmpty()) {
+            return 0;
+        }
+        DateFormat df = new SimpleDateFormat("hh::mm aa", Locale.getDefault());
+        Calendar c = Calendar.getInstance();
+        df.format(c);
+        return c.getTimeInMillis();
+    }
+
     @NonNull
     public String getMeetingEndTime(){
         if (!meetings.isEmpty()) {
             return meetings.get(0).end_time;
         }
         return "";
+    }
+
+    @NonNull
+    public long getMeetingEndTimeInMilli() {
+        String s = getMeetingEndTime();
+        if (s.isEmpty()) {
+            return 0;
+        }
+        DateFormat df = new SimpleDateFormat("hh::mm aa", Locale.getDefault());
+        Calendar c = Calendar.getInstance();
+        df.format(c);
+        return c.getTimeInMillis();
     }
 
     public String getId() {

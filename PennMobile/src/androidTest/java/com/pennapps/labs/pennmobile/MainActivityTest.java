@@ -10,6 +10,7 @@ import com.pennapps.labs.pennmobile.classes.Course;
 import com.pennapps.labs.pennmobile.classes.DiningHall;
 import com.pennapps.labs.pennmobile.classes.Person;
 import com.pennapps.labs.pennmobile.classes.Venue;
+import com.pennapps.labs.pennmobile.classes.Weather;
 
 import java.util.List;
 
@@ -100,5 +101,11 @@ public class MainActivityTest extends ActivityUnitTestCase<MainActivity> {
         DiningHall.Menu menu = commons.menus.get(0);
         DiningHall.DiningStation station = menu.stations.get(0);
         assertTrue(station.items.size() > 1);
+    }
+
+    public void testWeather() {
+        Weather weather = mLabs.weather().toBlocking().single();
+        assertNotNull(weather.main);
+        assertNotNull(weather.weather.get(0));
     }
 }
