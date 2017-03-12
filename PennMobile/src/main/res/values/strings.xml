@@ -37,6 +37,8 @@
         <item>course5</item>
     </string-array>
     <string name="registrar_search_count">register_count</string>
+    <string name="home_course_count_pref">home_course_count_</string>
+    <string name="home_course_pref">home_course_</string>
 
     <!-- Dining -->
     <string name="dining_hall_open">OPEN</string>

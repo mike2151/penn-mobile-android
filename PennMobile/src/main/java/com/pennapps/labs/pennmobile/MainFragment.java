@@ -194,7 +194,11 @@ public class MainFragment extends Fragment {
                                       @Override
                                       public void call(final Weather weather) {
                                           TextView tv = (TextView) viewMap.get(TEMPERATURE_KEY);
-                                          tv.setText(weather.main.temp + "");
+                                          int round = (int) weather.main.temp;
+                                          if (weather.main.temp - 0.5 >= round) {
+                                              round++;
+                                          }
+                                          tv.setText(round + "\u00b0");
                                           String mapId = weather.weather.get(0).icon;
                                           ImageView iv = (ImageView) viewMap.get(WEATHER_IMAGE_KEY);
                                           if (bitmapMap.containsKey(weather.weather.get(0).icon)) {
@@ -229,12 +233,41 @@ public class MainFragment extends Fragment {
         display.getSize(size);
         RelativeLayout layout = (RelativeLayout) inflater
                 .inflate(R.layout.main_custom, container, false);
+
+
         //TODO: Add in a bar here if there is a "special" day soon.
 
         //TODO: Check the database if we have any events.
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
-
+        Calendar c = Calendar.getInstance();
+        char key;
+        switch(c.get(Calendar.DAY_OF_WEEK)) {
+            case Calendar.MONDAY:
+                key = 'M'; break;
+            case Calendar.TUESDAY:
+                key = 'T'; break;
+            case Calendar.WEDNESDAY:
+                key = 'W'; break;
+            case Calendar.THURSDAY:
+                key = 'R'; break;
+            case Calendar.FRIDAY:
+                key = 'F'; break;
+            case Calendar.SATURDAY:
+                key = 'S'; break;
+            case Calendar.SUNDAY:
+                key = 'U'; break;
+            default:
+                key = '\0'; break;
+        }
         ArrayList<Course> courses = new ArrayList<>();
+        if (key != '\0') {
+            int count = sp.getInt(getString(R.string.home_course_count_pref) + key, 0);
+            if (count > 0) {
+                for (int i = 0; i < count; i++) {
+
+                }
+            }
+        }
         if (courses.isEmpty()) {
             layout.setBackgroundColor(getResources().getColor(R.color.graywhite));
             ImageView iv = new ImageView(getContext());
@@ -253,9 +286,9 @@ public class MainFragment extends Fragment {
             return;
         }
         ArrayList<CalendarEvent> eventList = new ArrayList<>(courses.size());
-        for (Course c : courses) {
-            eventList.add(new CalendarEvent(c.getMeetingStartTimeInMilli(), c.getMeetingEndTimeInMilli(),
-                    c.course_title, c.getMeetingLocation()));
+        for (Course course : courses) {
+            eventList.add(new CalendarEvent(course.getMeetingStartTimeInMilli(), course.getMeetingEndTimeInMilli(),
+                    course.course_title, course.getMeetingLocation()));
         }
 
         CalendarEvent[] events = new CalendarEvent[eventList.size()];
@@ -282,7 +315,7 @@ public class MainFragment extends Fragment {
         for (int i = 0; i < rowCount; i++) {
             long currentTime = specialTime.poll();
             TextView tv = new TextView(getContext());
-            Calendar c = Calendar.getInstance();
+            c = Calendar.getInstance();
             c.setTimeInMillis(currentTime);
             StringBuilder builder = new StringBuilder();
             builder.append(c.get(Calendar.HOUR) == 0 ? 12 : c.get(Calendar.HOUR));
