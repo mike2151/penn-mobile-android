@@ -5,7 +5,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Point;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -15,6 +17,7 @@ import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -36,18 +39,23 @@ import com.pennapps.labs.pennmobile.adapters.SimpleItemTouchHelperCallback;
 import com.pennapps.labs.pennmobile.api.Labs;
 import com.pennapps.labs.pennmobile.classes.CalendarEvent;
 import com.pennapps.labs.pennmobile.classes.Course;
+import com.pennapps.labs.pennmobile.classes.PennCalEvent;
 import com.pennapps.labs.pennmobile.classes.Weather;
 
 
 import org.joda.time.DateTime;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import rx.functions.Action1;
 
@@ -65,6 +73,7 @@ public class MainFragment extends Fragment {
     // map keys
     private static final String WEATHER_IMAGE_KEY = "weather image";
     private static final String TEMPERATURE_KEY = "temperature";
+    private static final String PENN_CAL_EVENT_KEY = "penn_cal_key";
 
     public MainFragment() {
         // Required empty public constructor
@@ -234,44 +243,86 @@ public class MainFragment extends Fragment {
         RelativeLayout layout = (RelativeLayout) inflater
                 .inflate(R.layout.main_custom, container, false);
 
+        TextView pennCalView = new TextView(getContext());
+        int penncalid = SearchFavoriteTab.generateViewId();
+        pennCalView.setId(penncalid);
+        //TODO: ask about colors and margins
+        pennCalView.setTextColor(Color.WHITE);
+        pennCalView.setBackgroundColor(Color.BLUE);
+        pennCalView.setVisibility(View.INVISIBLE);
+        pennCalView.setGravity(Gravity.CENTER);
+        viewMap.put(PENN_CAL_EVENT_KEY, pennCalView);
+        mLabs.pennCalEvents().subscribe(new Action1<List<PennCalEvent>>() {
 
-        //TODO: Add in a bar here if there is a "special" day soon.
-
-        //TODO: Check the database if we have any events.
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        Calendar c = Calendar.getInstance();
-        char key;
-        switch(c.get(Calendar.DAY_OF_WEEK)) {
-            case Calendar.MONDAY:
-                key = 'M'; break;
-            case Calendar.TUESDAY:
-                key = 'T'; break;
-            case Calendar.WEDNESDAY:
-                key = 'W'; break;
-            case Calendar.THURSDAY:
-                key = 'R'; break;
-            case Calendar.FRIDAY:
-                key = 'F'; break;
-            case Calendar.SATURDAY:
-                key = 'S'; break;
-            case Calendar.SUNDAY:
-                key = 'U'; break;
-            default:
-                key = '\0'; break;
-        }
-        ArrayList<Course> courses = new ArrayList<>();
-        if (key != '\0') {
-            int count = sp.getInt(getString(R.string.home_course_count_pref) + key, 0);
-            if (count > 0) {
-                for (int i = 0; i < count; i++) {
-
+            @Override
+            public void call(List<PennCalEvent> events) {
+                //Todo: ask tiff what to do about more than 1 at the same time
+                final TextView tv = (TextView) viewMap.get(PENN_CAL_EVENT_KEY);
+                String string = "";
+                for (PennCalEvent event : events) {
+                    if (!string.isEmpty()) {
+                        string += "\n";
+                    }
+                    Calendar c = Calendar.getInstance();
+                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                    SimpleDateFormat debug = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Calendar theDay = Calendar.getInstance();
+                    theDay.set(Calendar.HOUR_OF_DAY, 0);
+                    theDay.set(Calendar.MINUTE, 0);
+                    theDay.set(Calendar.SECOND, 0);
+                    try {
+                        theDay.setTime(format.parse(event.start));
+                        if (theDay.before(c)) {
+                            theDay.setTime(format.parse(event.end));
+                            theDay.add(Calendar.DATE, -1);
+                            if (theDay.before(c)) { //that means it's today
+                                string += event.name + " ends today";
+                            } else {
+                                long diff = theDay.getTimeInMillis() - c.getTimeInMillis();
+                                long days = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) + 1;
+                                string += event.name + " ends in " + days
+                                         + (days > 1 ? " days" : " day");
+                            }
+                        } else {
+                            long diff = theDay.getTimeInMillis() - c.getTimeInMillis();
+                            long days = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS) + 1;
+                            string += event.name + " begins in " + days
+                                     + (days > 1 ? " days" : " day");
+                        }
+                    } catch (ParseException e) {
+                        Log.d("Main Fragment", "error parsing", e);
+                    }
+                }
+                final String finalString = string;
+                if (!string.isEmpty()) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            tv.setText(finalString);
+                            tv.setVisibility(View.VISIBLE);
+                        }
+                    });
                 }
             }
-        }
-        if (courses.isEmpty()) {
+        }, new Action1<Throwable>() {
+            @Override
+            public void call(Throwable throwable) {
+                Log.d("Main Fragment", "failed to get the penn calendar", throwable);
+            }
+        });
+
+        RelativeLayout.LayoutParams param = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT);
+        pennCalView.setLayoutParams(param);
+        layout.addView(pennCalView);
+
+        // TODO: change the thing we will display to events
+        ArrayList<Course> calendarStuff = new ArrayList<>();
+        if (calendarStuff.isEmpty()) {
             layout.setBackgroundColor(getResources().getColor(R.color.graywhite));
             ImageView iv = new ImageView(getContext());
-            RelativeLayout.LayoutParams param = new RelativeLayout
+            param = new RelativeLayout
                     .LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
                     RelativeLayout.LayoutParams.WRAP_CONTENT);
             iv.setLayoutParams(param);
@@ -281,12 +332,18 @@ public class MainFragment extends Fragment {
             Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.beardedman, options);
             iv.setImageBitmap(bitmap);
             param.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
+            param.addRule(RelativeLayout.BELOW, penncalid);
             layout.addView(iv);
             container.addView(layout);
             return;
         }
-        ArrayList<CalendarEvent> eventList = new ArrayList<>(courses.size());
-        for (Course course : courses) {
+
+        // Todo: add the row for "schedule looks like" (ask tiff about when should we place this)
+
+
+
+        ArrayList<CalendarEvent> eventList = new ArrayList<>(calendarStuff.size());
+        for (Course course : calendarStuff) {
             eventList.add(new CalendarEvent(course.getMeetingStartTimeInMilli(), course.getMeetingEndTimeInMilli(),
                     course.course_title, course.getMeetingLocation()));
         }
@@ -315,7 +372,7 @@ public class MainFragment extends Fragment {
         for (int i = 0; i < rowCount; i++) {
             long currentTime = specialTime.poll();
             TextView tv = new TextView(getContext());
-            c = Calendar.getInstance();
+            Calendar c = Calendar.getInstance();
             c.setTimeInMillis(currentTime);
             StringBuilder builder = new StringBuilder();
             builder.append(c.get(Calendar.HOUR) == 0 ? 12 : c.get(Calendar.HOUR));
@@ -392,6 +449,7 @@ public class MainFragment extends Fragment {
                 );
         params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, RelativeLayout.TRUE);
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+        params.addRule(RelativeLayout.BELOW, penncalid);
         imageButton.setLayoutParams(params);
         layout.addView(imageButton);
         container.addView(layout);

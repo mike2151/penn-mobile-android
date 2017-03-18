@@ -44,6 +44,7 @@ import com.pennapps.labs.pennmobile.classes.Course;
 import com.pennapps.labs.pennmobile.classes.DiningHall;
 import com.pennapps.labs.pennmobile.classes.LaundryRoom;
 import com.pennapps.labs.pennmobile.classes.LaundryMachine;
+import com.pennapps.labs.pennmobile.classes.PennCalEvent;
 import com.pennapps.labs.pennmobile.classes.Person;
 import com.pennapps.labs.pennmobile.classes.Venue;
 import com.pennapps.labs.pennmobile.classes.Weather;
@@ -141,18 +142,6 @@ public class MainActivity extends AppCompatActivity {
         setTitle(R.string.main_title);
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         manager.cancelAll();
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) !=
-                PackageManager.PERMISSION_GRANTED) {
-            final Activity a = this;
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    ActivityCompat
-                            .requestPermissions(a, new String[]{Manifest.permission.READ_CALENDAR}, CODE_MAIN_CAL);
-                }
-            });
-        }
 
         if (from_alarm) {
             navigateLayout(R.id.nav_laundry);
@@ -274,6 +263,7 @@ public class MainActivity extends AppCompatActivity {
             gsonBuilder.registerTypeAdapter(new TypeToken<List<LaundryRoom>>(){}.getType(), new Serializer.LaundryListSerializer());
             gsonBuilder.registerTypeAdapter(new TypeToken<List<LaundryMachine>>(){}.getType(), new Serializer.LaundryMachineSerializer());
             gsonBuilder.registerTypeAdapter(new TypeToken<Weather>(){}.getType(), new Serializer.WeatherSerializer());
+            gsonBuilder.registerTypeAdapter(new TypeToken<List<PennCalEvent>>(){}.getType(), new Serializer.PennCalEventSerializer());
             Gson gson = gsonBuilder.create();
             RestAdapter restAdapter = new RestAdapter.Builder()
                     .setConverter(new GsonConverter(gson))
@@ -410,14 +400,6 @@ public class MainActivity extends AppCompatActivity {
                     mDrawerLayout.closeDrawer(mDrawerList);
                 }
             });
-        } else {
-            if (grantResults.length == 0 || grantResults[0] == PackageManager.PERMISSION_DENIED) {
-                Toast.makeText(this, "Access of your calendar is required to use the calendar feature on the home page.", Toast.LENGTH_LONG).show();
-            } else {
-                FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
-                tx.replace(R.id.content_frame, new MainFragment());
-                tx.commit();
-            }
         }
     }
 }

@@ -7,6 +7,7 @@ import com.pennapps.labs.pennmobile.classes.Course;
 import com.pennapps.labs.pennmobile.classes.DiningHall;
 import com.pennapps.labs.pennmobile.classes.LaundryRoom;
 import com.pennapps.labs.pennmobile.classes.LaundryMachine;
+import com.pennapps.labs.pennmobile.classes.PennCalEvent;
 import com.pennapps.labs.pennmobile.classes.Person;
 import com.pennapps.labs.pennmobile.classes.Review;
 import com.pennapps.labs.pennmobile.classes.StudySpace;
@@ -79,5 +80,7 @@ public interface Labs {
         @Path("date") String date,
         @Query("id") Integer id); //Integer so it is optional (null)
 
+    @GET("/calendar")
+    Observable<List<PennCalEvent>> pennCalEvents();
 
 }
