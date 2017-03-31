@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -40,6 +41,7 @@ import com.pennapps.labs.pennmobile.api.Labs;
 import com.pennapps.labs.pennmobile.classes.CalendarEvent;
 import com.pennapps.labs.pennmobile.classes.Course;
 import com.pennapps.labs.pennmobile.classes.PennCalEvent;
+import com.pennapps.labs.pennmobile.classes.StudySpace;
 import com.pennapps.labs.pennmobile.classes.Weather;
 
 
@@ -230,13 +232,6 @@ public class MainFragment extends Fragment {
 
     @SuppressWarnings("ResourceType")
     public void createCalendarView(LayoutInflater inflater, ViewGroup container) {
-        if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_CALENDAR) !=
-                PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat
-                    .requestPermissions(getActivity(), new String[]{Manifest.permission.READ_CALENDAR}
-                            , MainActivity.CODE_MAIN_CAL);
-            return;
-        }
         Display display = getActivity().getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
@@ -265,7 +260,6 @@ public class MainFragment extends Fragment {
                     }
                     Calendar c = Calendar.getInstance();
                     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-                    SimpleDateFormat debug = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     Calendar theDay = Calendar.getInstance();
                     theDay.set(Calendar.HOUR_OF_DAY, 0);
                     theDay.set(Calendar.MINUTE, 0);
@@ -453,6 +447,105 @@ public class MainFragment extends Fragment {
         imageButton.setLayoutParams(params);
         layout.addView(imageButton);
         container.addView(layout);
+    }
+
+    @SuppressWarnings("ResourceType")
+    public void createStudySpacesView(LayoutInflater inflater, ViewGroup container) {
+        final RelativeLayout layout = (RelativeLayout) inflater
+                .inflate(R.layout.main_custom, container, false);
+
+        mLabs.studySpaceId().subscribe(new Action1<List<StudySpace>>() {
+            @Override
+            public void call(final List<StudySpace> studySpaces) {
+                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                Set<String> savedSpaces = sp.getStringSet(getString(R.string.saved_study_spaces_key), null);
+                if (savedSpaces == null) { //first time launching this
+                    //saving the default two locations in
+                    SharedPreferences.Editor ed = sp.edit();
+                    savedSpaces = new HashSet<>();
+                    savedSpaces.add(getString(R.string.vanpelt_default));
+                    savedSpaces.add(getString(R.string.education_commons_default));
+                    ed.putStringSet(getString(R.string.saved_study_spaces_key), savedSpaces);
+                    ed.apply();
+                }
+                Calendar c = Calendar.getInstance();
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                for (final StudySpace ss : studySpaces) {
+                    if (savedSpaces.contains(ss.name)) {
+                        mLabs.studySpaceTimeSlot(format.format(c.getTime()), ss.id)
+                                .subscribe(new Action1<List<StudySpace.TimeSlot>>() {
+                                    @Override
+                                    public void call(List<StudySpace.TimeSlot> timeSlots) {
+                                        populateTimeSlots(ss, timeSlots, layout);
+                                    }
+                                }, new Action1<Throwable>() {
+                                    @Override
+                                    public void call(Throwable throwable) {
+                                        Log.d("Main fragment", "study spaces time slot call failed", throwable);
+                                    }
+                                });
+                    }
+                }
+            }
+        }, new Action1<Throwable>() {
+            @Override
+            public void call(Throwable throwable) {
+                Log.d("Main fragment", "study spaces id call failed", throwable);
+            }
+        });
+        container.addView(layout);
+    }
+
+    /**
+     * Called by the retrofit after getting the time slots, to be filtered and populate
+     * @param studySpace study spaces
+     * @param timeSlots the timeslots used to populate, unfiltered
+     * @param layout the layout to populate
+     */
+    private void populateTimeSlots(final StudySpace studySpace, List<StudySpace.TimeSlot> timeSlots, RelativeLayout layout) {
+        Display display = getActivity().getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+
+        //TODO: finish up textview and the button
+        //add in the textview for the building
+        TextView buildingTitle = new TextView(getContext());
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(size.x/18, size.y/25, 0, 0);
+        buildingTitle.setLayoutParams(params);
+
+        List<StudySpace.TimeSlot> filteredSlots = filteredSlots(timeSlots);
+        for (StudySpace.TimeSlot timeslot : filteredSlots) {
+            Button reserve = new Button(getContext());
+            reserve.setBackgroundColor(getResources().getColor(R.color.home_pink));
+            reserve.setText(R.string.reserve);
+            reserve.setGravity(Gravity.CENTER);
+            reserve.setWidth(size.x/3);
+            reserve.setHeight(size.y/10);
+            int reserveId = SearchFavoriteTab.generateViewId();
+            reserve.setId(reserveId);
+            reserve.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //TODO: link it to somewhere
+                }
+            });
+            layout.addView(reserve);
+        }
+
+    }
+
+    /**
+     * Called by populateTimeSlots to filter the time slots
+     * @param timeSlots original timeslots
+     * @return timeslots used to populate the layout
+     */
+    private List<StudySpace.TimeSlot> filteredSlots(List<StudySpace.TimeSlot> timeSlots) {
+        //TODO: figure out which timeslots to show
+        return timeSlots.subList(0,3); //at the moment hard code first 3
     }
 
 }

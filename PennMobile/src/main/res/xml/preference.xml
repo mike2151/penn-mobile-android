@@ -15,7 +15,8 @@
             android:key="@string/pref_home_schedule_key"
             android:title="@string/pref_home_schedule_title"
             android:summary="@string/pref_home_schedule_summ"
-            android:defaultValue="true"
+            android:defaultValue="false"
+            android:shouldDisableView="true"
             />
 
         <CheckBoxPreference

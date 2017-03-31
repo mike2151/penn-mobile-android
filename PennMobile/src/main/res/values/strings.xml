@@ -111,8 +111,8 @@
     <string name="pref_home_weather_summ">Display current weather</string>
 
     <string name="pref_home_schedule_key">schedule_key</string>
-    <string name="pref_home_schedule_title">Schedule</string>
-    <string name="pref_home_schedule_summ">Display your current course schedule</string>
+    <string name="pref_home_schedule_title">Events</string>
+    <string name="pref_home_schedule_summ">Display events</string>
 
     <string name="pref_home_dining_key">dining_key</string>
     <string name="pref_home_dining_title">Dining</string>
@@ -121,6 +121,12 @@
     <string name="pref_home_study_key">study_home_key</string>
     <string name="pref_home_study_title">Study Room Availability</string>
     <string name="pref_home_study_summ">Display today\'s study room availability</string>
+
+    <!-- HomePage -->
+    <string name="vanpelt_default">Van Pelt-Dietrich Library Center Group Study Rooms</string>
+    <string name="education_commons_default">Education Commons - Group Study Rooms</string>
+    <string name="saved_study_spaces_key">saved_study_spaces_key</string>
+    <string name="reserve">Reserve</string>
 
     <!-- Search favorites -->
     <string name="directory_show">Show favorites</string>
