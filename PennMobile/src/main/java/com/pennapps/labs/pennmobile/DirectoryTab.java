@@ -15,6 +15,7 @@ import com.pennapps.labs.pennmobile.classes.Person;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Observable;
 import java.util.Set;
 
 import butterknife.ButterKnife;
@@ -50,6 +51,7 @@ public class DirectoryTab extends SearchFavoriteTab {
         }
         mLabs.people(query)
                 .observeOn(AndroidSchedulers.mainThread())
+                .onErrorResumeNext(rx.Observable.<List<Person>>empty())
                 .subscribe(new Action1<List<Person>>() {
                     @Override
                     public void call(final List<Person> people) {

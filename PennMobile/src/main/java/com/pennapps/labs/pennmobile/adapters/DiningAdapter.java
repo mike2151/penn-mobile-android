@@ -11,6 +11,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.pennapps.labs.pennmobile.MainActivity;
 import com.pennapps.labs.pennmobile.R;
@@ -24,6 +25,7 @@ import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 
@@ -107,6 +109,9 @@ public class DiningAdapter extends ArrayAdapter<DiningHall> {
             progressBar.setVisibility(View.VISIBLE);
             mLabs.daily_menu(diningHall.getId())
                     .observeOn(AndroidSchedulers.mainThread())
+                    .onErrorResumeNext(
+                            returnObservableError()
+                    )
                     .subscribe(new Action1<DiningHall>() {
                         @Override
                         public void call(DiningHall newDiningHall) {
@@ -175,5 +180,10 @@ public class DiningAdapter extends ArrayAdapter<DiningHall> {
             this.hall = hall;
             ButterKnife.bind(this, view);
         }
+    }
+
+    public Observable returnObservableError() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<DiningHall>empty();
     }
 }

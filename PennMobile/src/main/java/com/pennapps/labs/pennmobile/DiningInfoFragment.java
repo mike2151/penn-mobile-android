@@ -36,6 +36,7 @@ import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 
@@ -92,6 +93,7 @@ public class DiningInfoFragment extends Fragment {
         if (!buildingCode.equals("")) {
             mLabs.buildings(buildingCode)
                     .observeOn(AndroidSchedulers.mainThread())
+                    .onErrorResumeNext(returnObservableError())
                     .subscribe(new Action1<List<Building>>() {
                         @Override
                         public void call(List<Building> buildings) {
@@ -207,6 +209,11 @@ public class DiningInfoFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+    }
+
+    public Observable returnObservableError() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<List<Building>>empty();
     }
 
 

@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.pennapps.labs.pennmobile.adapters.LaundrySettingsAdapter;
 import com.pennapps.labs.pennmobile.api.Labs;
@@ -24,7 +25,10 @@ import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.functions.Action1;
+
+import static java.security.AccessController.getContext;
 
 public class LaundrySettingsActivity extends AppCompatActivity {
 
@@ -95,6 +99,7 @@ public class LaundrySettingsActivity extends AppCompatActivity {
 
     private void getHalls() {
         mLabs.laundryRooms()
+                .onErrorResumeNext(returnObservableError())
                 .subscribe(new Action1<List<LaundryRoomSimple>>() {
                     @Override
                     public void call(final List<LaundryRoomSimple> rooms) {
@@ -194,5 +199,10 @@ public class LaundrySettingsActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         ButterKnife.unbind(this);
+    }
+
+    public Observable returnObservableError() {
+        //Toast.makeText(getApplicationContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<List<LaundryRoomSimple>>empty();
     }
 }

@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.pennapps.labs.pennmobile.adapters.RegistrarAdapter;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 
@@ -124,6 +126,7 @@ public class RegistrarTab extends SearchFavoriteTab {
         }
         mLabs.courses(query)
                 .observeOn(AndroidSchedulers.mainThread())
+                .onErrorResumeNext(returnObservableError())
                 .subscribe(new Action1<List<Course>>() {
                     @Override
                     public void call(List<Course> courses) {
@@ -213,5 +216,10 @@ public class RegistrarTab extends SearchFavoriteTab {
         } else {
             search_instructions.setText(getString(R.string.registrar_instructions));
         }
+    }
+
+    public Observable returnObservableError() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<List<Course>>empty();
     }
 }

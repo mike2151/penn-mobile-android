@@ -4,6 +4,7 @@ package com.pennapps.labs.pennmobile;
 //import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.pennapps.labs.pennmobile.adapters.NsoAdapter;
 
@@ -66,6 +67,7 @@ public class NsoTab extends SearchFavoriteTab {
             @Override
             public void onError(Throwable e) {
                 Log.d("NSO", "observable error", e);
+                //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
                 no_results.setVisibility(View.VISIBLE);
                 mListView.setVisibility(View.GONE);
             }

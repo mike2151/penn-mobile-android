@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.pennapps.labs.pennmobile.adapters.LaundryRoomAdapter;
 import com.pennapps.labs.pennmobile.api.Labs;
@@ -23,6 +24,7 @@ import java.util.Comparator;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.functions.Action1;
 
 /**
@@ -129,6 +131,7 @@ public class LaundryMachineFragment extends android.support.v4.app.Fragment {
 
     private void addRoom(final int i) {
         mLabs.room(i)
+                .onErrorResumeNext(returnObservableError())
                 .subscribe(new Action1<LaundryRoom>() {
                     @Override
                     public void call(final LaundryRoom room) {
@@ -188,5 +191,10 @@ public class LaundryMachineFragment extends android.support.v4.app.Fragment {
                         });
                     }
                 });
+    }
+
+    public Observable returnObservableError() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<LaundryRoom>empty();
     }
 }

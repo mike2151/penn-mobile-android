@@ -34,6 +34,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -82,6 +83,7 @@ import java.util.concurrent.Semaphore;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 
@@ -563,6 +565,7 @@ public class MapFragment extends Fragment {
     private void searchBuildings(String query) {
         mLabs.buildings(query)
                 .observeOn(AndroidSchedulers.mainThread())
+                .onErrorResumeNext(returnObservableErrorBuilding())
                 .subscribe(new Action1<List<Building>>() {
                                @Override
                                public void call(List<Building> buildings) {
@@ -636,7 +639,9 @@ public class MapFragment extends Fragment {
             query = getString(R.string.starting_location_hint);
             endQueryLatLng = mapCallbacks.getLatLng();
         } else {
-            mLabs.buildings(to).observeOn(AndroidSchedulers.mainThread()).subscribe(
+            mLabs.buildings(to).observeOn(AndroidSchedulers.mainThread())
+                    .onErrorResumeNext(returnObservableErrorBuilding())
+                    .subscribe(
                     new Action1<List<Building>>() {
                         @Override
                         public void call(List<Building> buildings) {
@@ -662,7 +667,9 @@ public class MapFragment extends Fragment {
             startQueryLatLng = mapCallbacks.getLatLng();
             getRouteWithLoc();
         } else {
-            mLabs.buildings(from).observeOn(AndroidSchedulers.mainThread()).subscribe(
+            mLabs.buildings(from).observeOn(AndroidSchedulers.mainThread())
+                    .onErrorResumeNext(returnObservableErrorBuilding())
+                    .subscribe(
                     new Action1<List<Building>>() {
                         @Override
                         public void call(List<Building> buildings) {
@@ -706,6 +713,7 @@ public class MapFragment extends Fragment {
         String longEnd = Double.toString(destLatLng.longitude);
         if (useBus) {
             mLabs.routing(latBegin, latEnd, longBegin, longEnd).observeOn(AndroidSchedulers.mainThread())
+                    .onErrorResumeNext(returnObservableErrorBusRoute())
                     .subscribe(
                             new Action1<BusRoute>() {
                                 @Override
@@ -938,7 +946,9 @@ public class MapFragment extends Fragment {
     }
 
     private void findBusRoute(final LatLng startLatLng, final LatLng destLatLng) {
-        mLabs.bus_stops().observeOn(AndroidSchedulers.mainThread()).subscribe(
+        mLabs.bus_stops().observeOn(AndroidSchedulers.mainThread())
+                .onErrorResumeNext(returnObservableErrorBusStop())
+                .subscribe(
                 new Action1<List<BusStop>>() {
                     @Override
                     public void call(List<BusStop> busStops) {
@@ -1167,7 +1177,9 @@ public class MapFragment extends Fragment {
     }
 
     private void loadRouteAdapter() {
-        mLabs.routes().observeOn(AndroidSchedulers.mainThread()).subscribe(
+        mLabs.routes().observeOn(AndroidSchedulers.mainThread())
+                .onErrorResumeNext(returnObservableErrorBusRoute())
+                .subscribe(
                 new Action1<List<BusRoute>>() {
                     @Override
                     public void call(List<BusRoute> routes) {
@@ -1268,6 +1280,19 @@ public class MapFragment extends Fragment {
                 }
             }
         }
+    }
+
+    public Observable returnObservableErrorBuilding() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<List<Building>>empty();
+    }
+    public Observable returnObservableErrorBusStop() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<List<BusStop>>empty();
+    }
+    public Observable returnObservableErrorBusRoute() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<BusRoute>empty();
     }
 
 }

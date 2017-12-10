@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -29,6 +30,7 @@ import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 
@@ -169,6 +171,7 @@ public class CourseFragment extends Fragment implements OnMapReadyCallback {
         if (!buildingCode.equals("")) {
             mLabs.buildings(buildingCode)
                     .observeOn(AndroidSchedulers.mainThread())
+                    .onErrorResumeNext(returnObservableErrorBuilding())
                     .subscribe(new Action1<List<Building>>() {
                         @Override
                         public void call(List<Building> buildings) {
@@ -197,6 +200,7 @@ public class CourseFragment extends Fragment implements OnMapReadyCallback {
     private void findCourseReviews() {
         mLabs.course_review(course.course_department + "-" + course.course_number)
                 .observeOn(AndroidSchedulers.mainThread())
+                .onErrorResumeNext(returnObservableErrorReview())
                 .subscribe(new Action1<Review>() {
                     @Override
                     public void call(Review review) {
@@ -260,5 +264,14 @@ public class CourseFragment extends Fragment implements OnMapReadyCallback {
             }
         }
         return false;
+    }
+
+    public Observable returnObservableErrorReview(){
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<Review>empty();
+    }
+    public Observable returnObservableErrorBuilding() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<List<Building>>empty();
     }
 }

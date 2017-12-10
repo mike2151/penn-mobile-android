@@ -23,6 +23,7 @@
     <string name="add_contact">Add contact</string>
     <string name="no_results">No results found.</string>
     <string name="action_licenses">Open Source Licenses</string>
+    <string name="observable_error">Error connecting. Please try again.</string>
 
     <!-- Search -->
     <string name="registrar_search">Search for courses</string>

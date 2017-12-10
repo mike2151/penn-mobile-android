@@ -8,6 +8,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.ListFragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.pennapps.labs.pennmobile.adapters.DiningAdapter;
 import com.pennapps.labs.pennmobile.api.Labs;
@@ -156,6 +158,9 @@ public class DiningFragment extends ListFragment {
                     }
                 })
                 .toList()
+                .onErrorResumeNext(
+                        returnObservableError()
+                )
                 .subscribe(new Action1<List<DiningHall>>() {
                     @Override
                     public void call(final List<DiningHall> diningHalls) {
@@ -213,5 +218,10 @@ public class DiningFragment extends ListFragment {
     public void onDestroyView() {
         super.onDestroyView();
         ButterKnife.unbind(this);
+    }
+
+    public Observable returnObservableError() {
+        //Toast.makeText(getContext(), R.string.observable_error, Toast.LENGTH_LONG).show();
+        return Observable.<List<DiningHall>>empty();
     }
 }
